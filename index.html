@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0d0f14"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="description" content="Inspector PCI — Sistema de Recolección de Datos para Pavimento Flexible ASTM D6433"/>
+<title>Inspector PCI — UNA Puno</title>
+
+<!-- PWA Manifest inline -->
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Inspector%20PCI%22%2C%22short_name%22%3A%22PCI%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230d0f14%22%2C%22theme_color%22%3A%22%23f5a623%22%7D">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+
+<!-- ═══════════════════ TOP BAR ═══════════════════ -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-badge">UNA</div>
+    <div class="brand-info">
+      <div class="brand-title">Inspector PCI</div>
+      <div class="brand-sub">CIV333 · Pavimento Flexible · ASTM D6433</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-outline btn-sm" onclick="PCI.exportCSV()" title="Exportar CSV">
+      <span class="btn-ico">⬇</span><span class="btn-lbl">CSV</span>
+    </button>
+    <button class="btn btn-outline btn-sm" onclick="PCI.exportJSON()" title="Exportar JSON">
+      <span class="btn-ico">⬇</span><span class="btn-lbl">JSON</span>
+    </button>
+    <button class="btn btn-outline btn-sm" onclick="PCI.exportPhotosZip()" title="Descargar fotos">
+      <span class="btn-ico">🖼</span><span class="btn-lbl">Fotos</span>
+    </button>
+  </div>
+</header>
+
+<!-- ═══════════════════ TABS ═══════════════════ -->
+<nav class="tabs-bar" role="tablist">
+  <button class="tab-btn active" role="tab" aria-selected="true"  onclick="PCI.switchTab('tramo',this)">
+    <span class="tab-ico">📋</span><span class="tab-txt">Tramo</span>
+  </button>
+  <button class="tab-btn" role="tab" aria-selected="false" onclick="PCI.switchTab('registro',this)">
+    <span class="tab-ico">🔍</span><span class="tab-txt">Registrar</span>
+  </button>
+  <button class="tab-btn" role="tab" aria-selected="false" onclick="PCI.switchTab('lista',this)">
+    <span class="tab-ico">📂</span><span class="tab-txt">Registros <span id="reg-count-badge" class="count-badge"></span></span>
+  </button>
+  <button class="tab-btn" role="tab" aria-selected="false" onclick="PCI.switchTab('fotos',this)">
+    <span class="tab-ico">📷</span><span class="tab-txt">Galería <span id="photo-count-badge" class="count-badge"></span></span>
+  </button>
+  <button class="tab-btn" role="tab" aria-selected="false" onclick="PCI.switchTab('resumen',this)">
+    <span class="tab-ico">📊</span><span class="tab-txt">Resumen</span>
+  </button>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     PANEL 1: DATOS DEL TRAMO
+══════════════════════════════════════════ -->
+<div id="panel-tramo" class="panel active" role="tabpanel">
+
+  <div class="card">
+    <h2 class="card-title"><span class="num">01</span> Identificación del Tramo</h2>
+
+    <div class="field-group">
+      <div>
+        <label class="field-label" for="t-carretera">Carretera / Ruta <span class="req">*</span></label>
+        <input id="t-carretera" class="field-input" type="text" placeholder="Ej: Ruta PE-3S, Av. El Sol, Jr. Cusco…" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="field-group cols-2">
+      <div>
+        <label class="field-label" for="t-seccion">Sección <span class="req">*</span></label>
+        <input id="t-seccion" class="field-input" type="text" placeholder="Ej: Sección A-1">
+      </div>
+      <div>
+        <label class="field-label" for="t-unidad">Unidad Muestreada <span class="req">*</span></label>
+        <input id="t-unidad" class="field-input" type="text" placeholder="Ej: UM-01">
+      </div>
+    </div>
+
+    <div class="field-group cols-2">
+      <div>
+        <label class="field-label" for="t-prog-ini">Progresiva Inicial (km) <span class="req">*</span></label>
+        <input id="t-prog-ini" class="field-input" type="text" placeholder="Ej: 0+000">
+      </div>
+      <div>
+        <label class="field-label" for="t-prog-fin">Progresiva Final (km)</label>
+        <input id="t-prog-fin" class="field-input" type="text" placeholder="Ej: 0+050">
+      </div>
+    </div>
+
+    <div class="field-group cols-2">
+      <div>
+        <label class="field-label" for="t-area-um">Área de la Unidad (m²)</label>
+        <input id="t-area-um" class="field-input" type="number" placeholder="Ej: 230" step="0.01" min="0">
+      </div>
+      <div>
+        <label class="field-label" for="t-forma">Forma de la Muestra</label>
+        <select id="t-forma" class="field-input">
+          <option value="">— Seleccionar —</option>
+          <option value="Rectangular">Rectangular</option>
+          <option value="Irregular">Irregular</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-group cols-2">
+      <div>
+        <label class="field-label" for="t-fecha">Fecha de Inspección <span class="req">*</span></label>
+        <input id="t-fecha" class="field-input" type="date">
+      </div>
+      <div>
+        <label class="field-label" for="t-inspector">Inspector <span class="req">*</span></label>
+        <input id="t-inspector" class="field-input" type="text" placeholder="Nombre del inspector">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div>
+        <label class="field-label" for="t-obs">Observaciones generales</label>
+        <textarea id="t-obs" class="field-input" placeholder="Notas sobre el tramo…" rows="3"></textarea>
+      </div>
+    </div>
+
+    <button class="btn btn-accent btn-full mt-8" onclick="PCI.saveTramo()">
+      ✓ Guardar datos del tramo y continuar
+    </button>
+  </div>
+
+  <div class="rules-box">
+    <strong>📌 Reglas de observación (PCI ASTM D6433)</strong>
+    <ul>
+      <li>Fallas <strong>9</strong> (Desnivel de calzada) y <strong>14</strong> (Cruce de vía férrea): <em>se registran pero se ignoran en el cálculo PCI</em>.</li>
+      <li>Fallas <strong>4</strong> (Abultamientos) y <strong>8</strong> (Grieta de reflexión de junta): considerar <em>solo si hay losas de concreto debajo</em>.</li>
+      <li>Si se registra falla <strong>11</strong> (Parcheo y acometidas): no se puede registrar ninguna otra falla en esa unidad.</li>
+      <li>Si se registra falla <strong>10</strong> (Grieta long./transversal): no se puede registrar falla <strong>8</strong> simultáneamente.</li>
+      <li>Fallas <strong>1</strong> (Piel de cocodrilo) y <strong>15</strong> (Ahuellamiento): medir por separado para cada nivel de severidad.</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     PANEL 2: REGISTRAR FALLA
+══════════════════════════════════════════ -->
+<div id="panel-registro" class="panel" role="tabpanel">
+
+  <!-- ALERTAS -->
+  <div id="alert-rules" class="alert alert-warn" role="alert" aria-live="polite">
+    <span aria-hidden="true">⚠</span>
+    <span id="alert-rules-msg"></span>
+    <button class="alert-close" onclick="PCI.hideAlert('alert-rules')" aria-label="Cerrar">✕</button>
+  </div>
+  <div id="alert-err" class="alert alert-err" role="alert" aria-live="assertive">
+    <span aria-hidden="true">✕</span>
+    <span id="alert-err-msg"></span>
+    <button class="alert-close" onclick="PCI.hideAlert('alert-err')" aria-label="Cerrar">✕</button>
+  </div>
+
+  <!-- CARD: TIPO DE FALLA -->
+  <div class="card">
+    <h2 class="card-title"><span class="num">02</span> Tipo de Falla</h2>
+
+    <div class="field-group">
+      <div>
+        <label class="field-label" for="f-tipo">Seleccionar falla <span class="req">*</span></label>
+        <select id="f-tipo" class="field-input" onchange="PCI.onFallaChange()">
+          <option value="">— Seleccionar tipo de falla —</option>
+          <option value="1|area">01 · Piel de cocodrilo (m²)</option>
+          <option value="2|area">02 · Exudación (m²)</option>
+          <option value="3|area">03 · Agrietamiento en bloque (m²)</option>
+          <option value="4|lineal|losa">04 · Abultamientos y hundimientos (ml) [solo si hay losa]</option>
+          <option value="5|area">05 · Corrugaciones (m²)</option>
+          <option value="6|area">06 · Depresiones (m²)</option>
+          <option value="7|lineal">07 · Grietas de borde (ml)</option>
+          <option value="8|lineal|losa">08 · Grieta de reflexión de junta (ml) [solo si hay losa]</option>
+          <option value="9|lineal|ignorar">09 · Desnivel de calzada/berma (ml) [ignorar en PCI]</option>
+          <option value="10|lineal">10 · Grietas long. y transversales (ml)</option>
+          <option value="11|area|excluye">11 · Parcheo y acometidas (m²)</option>
+          <option value="12|area">12 · Pulimento de agregados (m²)</option>
+          <option value="13|unidad">13 · Huecos (unidad)</option>
+          <option value="14|lineal|ignorar">14 · Cruce de vía férrea / sumidero (ml) [ignorar en PCI]</option>
+          <option value="15|area">15 · Ahuellamiento (m²)</option>
+          <option value="16|area">16 · Deformación por empuje (m²)</option>
+          <option value="17|area">17 · Grietas parabólicas / resbalamiento (m²)</option>
+          <option value="18|area">18 · Hinchamiento (m²)</option>
+          <option value="19|area">19 · Disgregación y desintegración (m²)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Aviso falla especial -->
+    <div id="falla-notice" class="alert alert-warn hidden" role="status">
+      <span aria-hidden="true">⚠</span><span id="falla-notice-msg"></span>
+    </div>
+  </div>
+
+  <!-- CARD: SEVERIDAD -->
+  <div class="card">
+    <h2 class="card-title"><span class="num">03</span> Grado de Severidad <span class="req" style="font-size:14px">*</span></h2>
+    <div class="sev-group" role="radiogroup" aria-label="Grado de severidad">
+      <label class="sev-option" data-sev="B" title="Severidad Baja">
+        <input type="radio" name="severidad" value="B" aria-label="Bajo">
+        <span class="sev-letter" style="color:#27ae60">B</span>
+        <span class="sev-word">Bajo</span>
+        <span class="sev-desc">Visible pero sin afectar tráfico</span>
+      </label>
+      <label class="sev-option" data-sev="M" title="Severidad Media">
+        <input type="radio" name="severidad" value="M" aria-label="Medio">
+        <span class="sev-letter" style="color:#e67e22">M</span>
+        <span class="sev-word">Medio</span>
+        <span class="sev-desc">Afecta la comodidad de marcha</span>
+      </label>
+      <label class="sev-option" data-sev="A" title="Severidad Alta">
+        <input type="radio" name="severidad" value="A" aria-label="Alto">
+        <span class="sev-letter" style="color:#c0392b">A</span>
+        <span class="sev-word">Alto</span>
+        <span class="sev-desc">Compromete la seguridad vial</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- CARD: MEDICIÓN -->
+  <div class="card">
+    <h2 class="card-title"><span class="num">04</span> Medición</h2>
+
+    <!-- ÁREA -->
+    <div id="meas-area" class="meas-block" aria-hidden="true">
+      <div class="field-group cols-2">
+        <div>
+          <label class="field-label" for="m-largo">Largo promedio (m) <span class="req">*</span></label>
+          <input id="m-largo" class="field-input" type="number" step="0.01" min="0" placeholder="0.00" oninput="PCI.calcArea()">
+        </div>
+        <div>
+          <label class="field-label" for="m-ancho">Ancho promedio (m) <span class="req">*</span></label>
+          <input id="m-ancho" class="field-input" type="number" step="0.01" min="0" placeholder="0.00" oninput="PCI.calcArea()">
+        </div>
+      </div>
+      <div class="meas-calc">
+        <span>Área calculada:</span>
+        <strong id="result-area">0.00</strong> m²
+      </div>
+    </div>
+
+    <!-- LINEAL -->
+    <div id="meas-lineal" class="meas-block" aria-hidden="true">
+      <div class="field-group">
+        <div>
+          <label class="field-label" for="m-longitud">Longitud (m) <span class="req">*</span></label>
+          <input id="m-longitud" class="field-input" type="number" step="0.01" min="0" placeholder="0.00">
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIDAD -->
+    <div id="meas-unidad" class="meas-block" aria-hidden="true">
+      <div class="field-group">
+        <div>
+          <label class="field-label" for="m-cantidad">Cantidad (unidades) <span class="req">*</span></label>
+          <input id="m-cantidad" class="field-input" type="number" step="1" min="0" placeholder="0">
+        </div>
+      </div>
+    </div>
+
+    <div id="meas-empty" class="meas-placeholder">
+      <span class="meas-placeholder-ico">📐</span>
+      Seleccione un tipo de falla para activar el formulario de medición.
+    </div>
+  </div>
+
+  <!-- CARD: GEOLOCALIZACIÓN -->
+  <div class="card">
+    <h2 class="card-title"><span class="num">05</span> Geolocalización</h2>
+    <div class="status-row">
+      <div id="geo-chip" class="status-chip">
+        <div class="dot"></div>
+        <span id="geo-text">Sin coordenadas</span>
+      </div>
+    </div>
+    <div id="geo-coords" class="meas-calc hidden" aria-live="polite">
+      <span>Lat:</span> <strong id="geo-lat">—</strong> &nbsp;
+      <span>Lng:</span> <strong id="geo-lng">—</strong> &nbsp;
+      <span>Precisión:</span> <strong id="geo-acc">—</strong> m
+    </div>
+    <button class="btn btn-outline btn-sm mt-8" onclick="PCI.getLocation()">📍 Obtener coordenadas GPS</button>
+  </div>
+
+  <!-- CARD: FOTOGRAFÍA MEJORADA -->
+  <div class="card">
+    <h2 class="card-title"><span class="num">06</span> Fotografías de la Falla</h2>
+
+    <div class="status-row">
+      <div id="photo-chip" class="status-chip">
+        <div class="dot"></div>
+        <span id="photo-text">Sin fotos</span>
+      </div>
+    </div>
+
+    <!-- Grid de fotos múltiples -->
+    <div id="photo-grid" class="photo-grid" aria-label="Fotos capturadas"></div>
+
+    <!-- Zona de carga -->
+    <div class="photo-add-area" id="photo-add-area" onclick="document.getElementById('photoInput').click()" role="button" tabindex="0" aria-label="Agregar fotografía">
+      <span class="photo-add-ico" aria-hidden="true">📷</span>
+      <span class="photo-add-txt">Toca para capturar o cargar fotografía</span>
+      <span class="photo-add-sub">JPG · PNG · HEIC · hasta 10 MB</span>
+    </div>
+
+    <!-- Inputs de archivo -->
+    <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="PCI.loadPhoto(event)" style="display:none">
+    <input type="file" id="photoInputGallery" accept="image/*" multiple onchange="PCI.loadPhotoGallery(event)" style="display:none">
+
+    <!-- Botones adicionales -->
+    <div class="photo-actions mt-8">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('photoInputGallery').click()">
+        🖼 Desde galería (múltiples)
+      </button>
+      <button class="btn btn-outline btn-sm hidden" id="clear-photos-btn" onclick="PCI.clearPhotos()">
+        ✕ Limpiar fotos
+      </button>
+    </div>
+  </div>
+
+  <!-- CARD: OBSERVACIONES -->
+  <div class="card">
+    <h2 class="card-title"><span class="num">07</span> Observaciones</h2>
+    <textarea id="f-obs" class="field-input" placeholder="Descripción adicional de la falla, condiciones del área, notas del inspector…" rows="3" aria-label="Observaciones del registro"></textarea>
+  </div>
+
+  <!-- FOOTER FIJO -->
+  <div class="form-footer">
+    <button class="btn btn-outline" onclick="PCI.clearForm()">🗑 Limpiar</button>
+    <button class="btn btn-accent" onclick="PCI.saveRegistro()">✓ Guardar Registro</button>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     PANEL 3: LISTA DE REGISTROS
+══════════════════════════════════════════ -->
+<div id="panel-lista" class="panel" role="tabpanel">
+
+  <div class="list-header">
+    <div class="list-title">Registros Guardados</div>
+    <div class="list-actions">
+      <button class="btn btn-outline btn-sm" onclick="PCI.exportCSV()">⬇ CSV</button>
+      <button class="btn btn-outline btn-sm" onclick="PCI.exportJSON()">⬇ JSON</button>
+    </div>
+  </div>
+
+  <!-- Filtros rápidos -->
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="PCI.filterList('all', this)">Todos</button>
+    <button class="filter-btn" onclick="PCI.filterList('B', this)" style="color:#27ae60">Bajo</button>
+    <button class="filter-btn" onclick="PCI.filterList('M', this)" style="color:#e67e22">Medio</button>
+    <button class="filter-btn" onclick="PCI.filterList('A', this)" style="color:#c0392b">Alto</button>
+    <button class="filter-btn" onclick="PCI.filterList('foto', this)">Con foto</button>
+  </div>
+
+  <div id="reg-list-container">
+    <div class="empty-state">
+      <span class="empty-ico">📋</span>
+      <div class="empty-title">Sin registros aún</div>
+      <div class="empty-sub">Ve a "Registrar Falla" para agregar el primer registro de falla.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     PANEL 4: GALERÍA DE FOTOS
+══════════════════════════════════════════ -->
+<div id="panel-fotos" class="panel" role="tabpanel">
+
+  <div class="list-header">
+    <div class="list-title">Galería de Fotografías</div>
+    <div class="list-actions">
+      <button class="btn btn-accent btn-sm" onclick="PCI.exportPhotosZip()">🖼 Descargar todas</button>
+    </div>
+  </div>
+
+  <div id="gallery-info" class="gallery-info" style="display:none"></div>
+
+  <div id="gallery-container" class="gallery-grid">
+    <div class="empty-state">
+      <span class="empty-ico">📷</span>
+      <div class="empty-title">Sin fotografías</div>
+      <div class="empty-sub">Las fotos capturadas en los registros aparecerán aquí.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     PANEL 5: RESUMEN
+══════════════════════════════════════════ -->
+<div id="panel-resumen" class="panel" role="tabpanel">
+
+  <div class="card">
+    <h2 class="card-title"><span class="num">01</span> Estadísticas de la Unidad</h2>
+    <div id="resumen-stats" class="stats-grid">
+      <div class="stat-card"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Total registros</div></div>
+      <div class="stat-card"><div class="stat-val" id="s-tipos">0</div><div class="stat-lbl">Tipos de falla</div></div>
+      <div class="stat-card"><div class="stat-val" id="s-fotos">0</div><div class="stat-lbl">Fotografías</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:#27ae60" id="s-sev-b">0</div><div class="stat-lbl">Sev. Baja</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:#e67e22" id="s-sev-m">0</div><div class="stat-lbl">Sev. Media</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:#c0392b" id="s-sev-a">0</div><div class="stat-lbl">Sev. Alta</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title"><span class="num">02</span> Datos del Tramo</h2>
+    <div id="resumen-tramo" class="tramo-info-text">
+      — No hay datos de tramo guardados —
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title"><span class="num">03</span> Fallas Registradas por Tipo</h2>
+    <div id="resumen-fallas" class="text-muted text-sm">— Sin datos —</div>
+  </div>
+
+  <div class="card pci-card">
+    <h2 class="card-title"><span class="num">04</span> Cálculo PCI
+      <span class="card-sub">(reservado para gabinete)</span>
+    </h2>
+    <p class="text-muted text-sm">
+      Los campos de densidad, valor deducido (VD), valor deducido corregido (VDC) y PCI final
+      requieren las curvas de deducción ASTM D6433 y se calculan en gabinete con los datos exportados.
+    </p>
+    <div class="divider"></div>
+    <div class="field-group cols-3" style="margin-bottom:0">
+      <div>
+        <label class="field-label">Área total afectada (m²)</label>
+        <div class="meas-calc" id="pci-area-total">—</div>
+      </div>
+      <div>
+        <label class="field-label">VDC máximo</label>
+        <div class="meas-calc">— (gabinete)</div>
+      </div>
+      <div>
+        <label class="field-label">PCI = 100 − VDC</label>
+        <div class="meas-calc">— (gabinete)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="resumen-actions">
+    <button class="btn btn-accent" onclick="PCI.exportCSV()">⬇ Exportar CSV</button>
+    <button class="btn btn-outline" onclick="PCI.exportJSON()">⬇ Exportar JSON</button>
+    <button class="btn btn-outline" onclick="PCI.exportPhotosZip()">🖼 Descargar Fotos</button>
+    <button class="btn btn-danger" onclick="PCI.clearAll()">🗑 Borrar todo</button>
+  </div>
+
+</div>
+
+</div><!-- /app-shell -->
+
+<!-- TOAST -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- MODAL: VER FOTO AMPLIADA -->
+<div class="modal-overlay" id="photo-modal" onclick="PCI.closePhotoModal()" role="dialog" aria-modal="true" aria-label="Foto ampliada">
+  <div class="photo-modal-content" onclick="event.stopPropagation()">
+    <button class="photo-modal-close" onclick="PCI.closePhotoModal()" aria-label="Cerrar">✕</button>
+    <img id="photo-modal-img" src="" alt="Fotografía de falla PCI">
+    <div id="photo-modal-caption" class="photo-modal-caption"></div>
+    <div class="photo-modal-nav">
+      <button id="photo-modal-prev" class="btn btn-outline btn-sm" onclick="PCI.navPhotoModal(-1)">← Anterior</button>
+      <span id="photo-modal-counter" class="text-mono text-muted text-sm"></span>
+      <button id="photo-modal-next" class="btn btn-outline btn-sm" onclick="PCI.navPhotoModal(1)">Siguiente →</button>
+    </div>
+    <div class="photo-modal-actions">
+      <a id="photo-modal-download" class="btn btn-accent btn-sm" download>⬇ Descargar foto</a>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMAR BORRAR REGISTRO -->
+<div class="modal-overlay" id="del-modal" role="dialog" aria-modal="true" aria-label="Confirmar eliminación">
+  <div class="modal-box">
+    <div class="modal-title">Eliminar registro</div>
+    <p class="text-muted" style="font-size:14px;">¿Seguro que deseas eliminar este registro y sus fotografías? Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="PCI.closeDelModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="PCI.confirmDelete()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
